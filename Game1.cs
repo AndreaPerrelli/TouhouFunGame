@@ -5,14 +5,10 @@ using Microsoft.Xna.Framework.Media;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static System.Formats.Asn1.AsnWriter;
 using Newtonsoft.Json;
 using System.IO;
-using SharpDX.Direct2D1;
 using SpriteBatch = Microsoft.Xna.Framework.Graphics.SpriteBatch;
 using Microsoft.Xna.Framework.Audio;
-using SharpDX.Direct2D1.Effects;
-using SharpDX.Direct3D9;
 
 namespace Touhou
 {
@@ -45,22 +41,22 @@ namespace Touhou
 
         #region Game Mechanics
 
-        const float SPAWN_DECREASE_RATE = 0.99f;
-        const float SHOOT_DECREASE_RATE = 0.99f;
-        const float MIN_SPAWN_TIME = 0.5f;
-        const float MIN_SHOOT_INTERVAL = 0.3f;
+        private const float SPAWN_DECREASE_RATE = 0.99f;
+        private const float SHOOT_DECREASE_RATE = 0.99f;
+        private const float MIN_SPAWN_TIME = 0.5f;
+        private const float MIN_SHOOT_INTERVAL = 0.3f;
 
         #endregion
 
         #region Score & Game State
 
-        int score = 0;
-        float timeSinceLastScoreIncrement = 0;
-        bool isGameOver = false;
+        private int score = 0;
+        private float timeSinceLastScoreIncrement = 0;
+        private bool isGameOver = false;
         public GameState currentState = GameState.Menu;
         private bool hasDrawnGameOverScreen = false;
         private static readonly List<ScoreEntry> scoreEntries = new List<ScoreEntry>();
-        List<ScoreEntry> scores = scoreEntries;
+        private List<ScoreEntry> scores = scoreEntries;
 
         #endregion
 
@@ -74,14 +70,14 @@ namespace Touhou
 
         #region Audio
 
-        Song mySong;
+        private Song mySong;
 
         #endregion
 
-        const int HEALTH_BAR_WIDTH = 50; // Larghezza della barra della salute
-        const int HEALTH_BAR_HEIGHT = 5;  // Altezza della barra della salute
-        Color HEALTH_BAR_COLOR = Color.Green; // Colore della barra quando è piena
-        Color HEALTH_BAR_BG_COLOR = Color.Red; // Colore di sfondo della barra
+        private const int HEALTH_BAR_WIDTH = 50; // Larghezza della barra della salute
+        private const int HEALTH_BAR_HEIGHT = 5;  // Altezza della barra della salute
+        private Color HEALTH_BAR_COLOR = Color.Green; // Colore della barra quando è piena
+        private Color HEALTH_BAR_BG_COLOR = Color.Red; // Colore di sfondo della barra
 
         private List<PowerUp> powerUps = new List<PowerUp>();
         private Texture2D powerUpTexture;
@@ -90,376 +86,102 @@ namespace Touhou
         private Texture2D enemiesTexture;
         private Texture2D enemiesBulletsTexture;
         private Texture2D playerBulletsTexture;
-        Random rng = new Random();
-        List<PickUpItem> pickUpItems = new List<PickUpItem>();
-        SoundEffect playerShootSound;
-        SoundEffect explosionSound;
-        SoundEffect powerUpSound;
-        SoundEffect pickUpItemSound;
+        private Random rng = new Random();
+        private List<PickUpItem> pickUpItems = new List<PickUpItem>();
+        private SoundEffect playerShootSound;
+        private SoundEffect explosionSound;
+        private SoundEffect powerUpSound;
+        private SoundEffect pickUpItemSound;
 
 
         // Variabili Membro
-        Texture2D backgroundNear;  // Texture dello sfondo vicino
-        Texture2D backgroundFar;   // Texture dello sfondo lontano
-        Vector2 backgroundNearPosition; // Posizione iniziale dello sfondo vicino
-        Vector2 backgroundFarPosition;  // Posizione iniziale dello sfondo lontano
-        float backgroundNearSpeed = 1f;  // Velocità dello sfondo vicino
-        float backgroundFarSpeed = 1f;  // Velocità dello sfondo lontano
+        private Texture2D backgroundNear;  // Texture dello sfondo vicino
+        private Texture2D backgroundFar;   // Texture dello sfondo lontano
+        private Vector2 backgroundNearPosition; // Posizione iniziale dello sfondo vicino
+        private Vector2 backgroundFarPosition;  // Posizione iniziale dello sfondo lontano
+        private float backgroundNearSpeed = 1f;  // Velocità dello sfondo vicino
+        private float backgroundFarSpeed = 1f;  // Velocità dello sfondo lontano
 
-
-        float transitionAlpha = 0;
-        bool isTransitioning = false;
-
-        float scaleFactorNear;
-        float scaleFactorFar;
+        private float scaleFactorNear;
+        private float scaleFactorFar;
 
         private BulletPattern bulletPattern = new BulletPattern();
 
-        float scale = 0.1f;  // Ad esempio, riduci le dimensioni del 50%
+        private float scale = 0.1f;  // Ad esempio, riduci le dimensioni del 50%
 
+        private const float ENEMY_BULLET_SPEED = 5.0f; // Definisci questa costante all'inizio della tua classe
 
+        // Definisci le costanti per le risorse
+        private const string BACKGROUND_NEAR_TEXTURE_PATH = "background_close";
+        private const string BACKGROUND_FAR_TEXTURE_PATH = "background_distant";
+        private const string POWER_UP_TEXTURE_PATH = "Doritos_Chips";
+        private const string PICK_UP_ITEM_TEXTURE_PATH = "monster_energy";
+        private const string ENEMIES_TEXTURE_PATH = "enemies";
+        private const string ENEMIES_BULLETS_TEXTURE_PATH = "bullets";
+        private const string PLAYER_BULLETS_TEXTURE_PATH = "player_bullets";
 
-        const float ENEMY_BULLET_SPEED = 5.0f; // Definisci questa costante all'inizio della tua classe
+        private const string PLAYER_SHOOT_SOUND_PATH = "laser_beam";
+        private const string EXPLOSION_SOUND_PATH = "explosion";
+        private const string POWER_UP_SOUND_PATH = "powerup";
+        private const string PICK_UP_ITEM_SOUND_PATH = "coin_collect";
+
+        private const string FONT_PATH = "SpriteFont1";
+        private const string FILE_NAME = "scores.json";
+        private const string CONTENT_DIRECTORY = "Content";
+        private const string GAME_OVER_TEXT = "YOU FAILED TO DESTROY MCDONALD EMPIRE";
+        private const string MAIN_CHARACTER_ASSET = "main_character";
+        private const string SONG_ASSET = "A Soul as Red as a Ground Cherry";
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
-            Content.RootDirectory = "Content";
+            Content.RootDirectory = CONTENT_DIRECTORY;
             IsMouseVisible = true;
-        }
-
-        internal List<ScoreEntry> LoadScores()
-        {
-            if (File.Exists("scores.json"))
-            {
-                string json = File.ReadAllText("scores.json");
-                scores = JsonConvert.DeserializeObject<List<ScoreEntry>>(json);
-            }
-            return scores;
         }
 
 
         protected override void Initialize()
         {
+            LoadMainCharacter();
+            InitializePlayer();
+            LoadAndPlayBackgroundMusic();
+            LoadGameScores();
 
-            //carico texture del personaggio
-            mainCharacterTexture = Content.Load<Texture2D>("main_character");
-            // TODO: Add your initialization logic here
-            player = new Player(new Vector2(_graphics.PreferredBackBufferWidth / 2 - Player.Size / 2, _graphics.PreferredBackBufferHeight - Player.Size - 10),
-                                Vector2.Zero,
-                                0.1f,
-                                Player.DefaultBulletsAmount,
-                                Player.DefaultDamage,                                
-                                mainCharacterTexture);
-
-            //carico l'OST per tutta la durata del gioco
-            mySong = Content.Load<Song>("A Soul as Red as a Ground Cherry");
-            MediaPlayer.Play(mySong);
-            MediaPlayer.IsRepeating = true;
-            MediaPlayer.Volume = 0.5f; // imposta il volume al 50%
-            scores = LoadScores();
             currentState = GameState.Playing;
+
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
+           _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
-            whitePixel = new Texture2D(GraphicsDevice, 1, 1);
-            whitePixel.SetData(new[] { Color.White });
-
-            //carico font per schermata di game over
-            gameOverFont = Content.Load<SpriteFont>("SpriteFont1");
-            
-            //carico font per la scritta dello Score
-            scoreFont = Content.Load<SpriteFont>("SpriteFont1");
-
-            //carico texture per power up
-            powerUpTexture = Content.Load<Texture2D>("Doritos_Chips");
-
-            //carico texture per item pickup
-            pickUpItemTexture = Content.Load<Texture2D>("monster_energy");
-
-            //carico suono di sparo del giocatore
-            playerShootSound = Content.Load<SoundEffect>("laser_beam");
-
-            //carico suono di esplosione dei nemici
-            explosionSound = Content.Load<SoundEffect>("explosion");
-
-            //carico suono del powerup
-            powerUpSound = Content.Load<SoundEffect>("powerup");
-
-            //carico suono di quando si raccoglie item
-            pickUpItemSound = Content.Load<SoundEffect>("coin_collect");
-
-            // background vicino
-            backgroundNear = Content.Load<Texture2D>("background_close");
-
-            // background lontano
-            backgroundFar = Content.Load<Texture2D>("background_distant");
-
-            //carico texture dei nemici
-            enemiesTexture = Content.Load<Texture2D>("enemies");
-
-            //carico texture dei proiettili
-            enemiesBulletsTexture = Content.Load<Texture2D>("bullets");
-
-            //carico texture dei proiettili del giocatore
-            playerBulletsTexture = Content.Load<Texture2D>("player_bullets");
-
-
-            // Calcola i fattori di scala per adattare le texture allo schermo
-            // Calcola i fattori di scala per adattare le texture allo schermo
-            float scaleXNear = (float)GraphicsDevice.Viewport.Width / backgroundNear.Width;
-            float scaleYNear = (float)GraphicsDevice.Viewport.Height / backgroundNear.Height;
-            scaleFactorNear = Math.Max(scaleXNear, scaleYNear);
-
-            float scaleXFar = (float)GraphicsDevice.Viewport.Width / backgroundFar.Width;
-            float scaleYFar = (float)GraphicsDevice.Viewport.Height / backgroundFar.Height;
-            scaleFactorFar = Math.Max(scaleXFar, scaleYFar);
-
-            backgroundNearPosition = new Vector2(0, 0);
-            backgroundFarPosition = new Vector2(0, -backgroundNear.Height * scaleFactorNear);
+            LoadTextures();
+            LoadSounds();
+            LoadFonts();
+            InitializeBackground();
 
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
-
+            HandleGlobalInput();
             // TODO: Add your update logic here
-            var keyboardState = Keyboard.GetState();
             switch (currentState)
             {
                 case GameState.Playing:
                     // Tutta la logica del gioco in corso qui
-
-                    MediaPlayer.Resume();
-                    timeSinceLastPlayerShot += (float)gameTime.ElapsedGameTime.TotalSeconds; // dove gameTime è l'argomento del metodo Update
-                    enemySpawnTime *= SPAWN_DECREASE_RATE;
-                    enemyShootInterval *= SHOOT_DECREASE_RATE;
-                    // Dopo aver diminuito i tempi, controlla i limiti minimi:
-                    if (enemySpawnTime < MIN_SPAWN_TIME) enemySpawnTime = MIN_SPAWN_TIME;
-                    if (enemyShootInterval < MIN_SHOOT_INTERVAL) enemyShootInterval = MIN_SHOOT_INTERVAL;
-                    KeyboardState previousKeyboardState;
-
-                    player.SetVelocity(Vector2.Zero); // Azzera la velocità a ogni frame
-
-                    if (keyboardState.IsKeyDown(Keys.Left))
-                        player.SetVelocity(new Vector2(-PLAYER_SPEED, player.GetVelocity().Y));
-                    if (keyboardState.IsKeyDown(Keys.Right))
-                        player.SetVelocity(new Vector2(PLAYER_SPEED, player.GetVelocity().Y));
-                    if (keyboardState.IsKeyDown(Keys.Up))
-                        player.SetVelocity(new Vector2(player.GetVelocity().X, -PLAYER_SPEED));
-                    if (keyboardState.IsKeyDown(Keys.Down))
-                        player.SetVelocity(new Vector2(player.GetVelocity().X, PLAYER_SPEED));
-                    if (keyboardState.IsKeyDown(Keys.Space) && timeSinceLastPlayerShot >= playerShootCooldown)
-                    {
-                        player.Shoot(bullets, playerBulletsTexture);
-                        playerShootSound.Play(0.2f, 0.0f, 0.0f);
-                        timeSinceLastPlayerShot = 0;
-                    }
-
-
-
-                    previousKeyboardState = keyboardState;
-
-                    player.Update();
-                    bullets.ForEach(bullet => bullet.Update());
-                    bullets.RemoveAll(bullet => bullet.Position.Y < 0);  // Rimuovi i proiettili che escono dallo schermo.
-
-                    timeSinceLastSpawn += gameTime.ElapsedGameTime.TotalSeconds;
-                    if (timeSinceLastSpawn >= enemySpawnTime)
-                    {
-
-                        enemies.Add(new Enemy(new Vector2(random.Next(0, _graphics.PreferredBackBufferWidth - Enemy.Size), 0), enemiesTexture));
-                        timeSinceLastSpawn = 0;
-                    }
-
-                    // Aggiorna i nemici
-                    foreach (var enemy in enemies)
-                    {
-                        enemy.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
-                    }
-
-                    // Controlla le collisioni tra nemici e proiettili
-                    for (int i = enemies.Count - 1; i >= 0; i--)
-                    {
-                        for (int j = bullets.Count - 1; j >= 0; j--)
-                        {
-                            if (enemies[i].CheckCollision(bullets[j]))
-                            {
-                                enemies[i].Hit(); // chiama il metodo Hit per cambiare il colore
-                                bullets.RemoveAt(j);  // Rimuove il proiettile che ha colpito il nemico
-
-                                if (enemies[i].Health <= 0)
-                                {
-                                    if (ShouldDropPowerUp())
-                                    {
-                                        powerUps.Add(new PowerUp(powerUpTexture, enemies[i].Position));
-
-                                    }
-                                    else
-                                    {
-                                        if (ShouldDropPickUpItem())
-                                            pickUpItems.Add(new PickUpItem
-                                            {
-                                                Texture = pickUpItemTexture, // La tua texture per il PickUpItem
-                                                Position = enemies[i].Position
-                                            });
-                                    }
-                                    explosionSound.Play(0.2f, 0.0f, 0.0f); // riproduce suono esplosione
-                                    enemies.RemoveAt(i);  // Rimuove il nemico solo se la sua salute è a zero
-                                    score += 100;  // Aggiorna lo score solo se il nemico è effettivamente "morto"
-                                                   // Decide se droppare un power-up, puoi usare la probabilità qui
-
-                                }
-
-                                break;
-                            }
-                        }
-                    }
-
-
-                    // Rimuovi i nemici che sono fuori dallo schermo
-                    enemies.RemoveAll(enemy => enemy.Position.Y > _graphics.PreferredBackBufferHeight);
-
-
-                    // aggiungere logica per proiettili nemici
-
-                    timeSinceLastEnemyShot += (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-                    foreach (var enemy in enemies)
-                    {
-                        enemy.TimeSinceLastShot += (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-                        if (enemy.TimeSinceLastShot >= enemy.ShootInterval)
-                        {
-                            // Usa GetRandomPattern invece della logica predefinita
-                            List<Vector2> bulletsDirections = bulletPattern.GetRandomPattern(enemy.Position, player.GetPosition(), ENEMY_BULLET_SPEED);
-
-                            foreach (var direction in bulletsDirections)
-                            {
-                                Vector2 bulletPosition = new Vector2(enemy.Position.X + Enemy.Size / 2 - Bullet.Size / 2, enemy.Position.Y + Enemy.Size);
-                                enemyBullets.Add(new Bullet(bulletPosition, direction, enemiesBulletsTexture));
-                            }
-
-                            enemy.TimeSinceLastShot = 0;  // Resetta il timer del nemico
-                        }
-
-                        enemy.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
-                    }
-
-                    foreach (var bullet in enemyBullets)
-                    {
-                        bullet.Update();
-                    }
-
-                    // Aggiungere una collisione tra i proiettili nemici e il giocatore 
-                    for (int i = enemyBullets.Count - 1; i >= 0; i--)
-                    {
-                        if (player.CheckCollision(enemyBullets[i]))
-                        {
-                            // Qui gestirai la logica della sconfitta
-                            currentState = GameState.GameOver;
-                            hasDrawnGameOverScreen = false;
-                            //                   Exit(); // per ora chiudiamo il gioco
-                        }
-                    }
-
-                    // Aggiorno il punteggio ogni secondo
-                    timeSinceLastScoreIncrement += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                    if (timeSinceLastScoreIncrement >= 1)
-                    {
-                        score += 50;
-                        timeSinceLastScoreIncrement -= 1;
-                    }
-
-
-                    //Nel loop di aggiornamento, controlla se il giocatore raccoglie un power up:
-                    foreach (var powerUp in powerUps.ToList())
-                    {
-                        if (powerUp.CheckCollision(player))
-                        {
-                            // Aggiorna il giocatore con il power up qui.
-                            // Supponiamo che questa parte venga eseguita quando il giocatore raccoglie un power-up:
-                            int bonusScore = player.PowerUp();
-                            score += bonusScore;
-                            powerUpSound.Play(0.5f, 0, 0);
-                            // Potresti anche rimuovere il power up dalla lista qui, ma dipende da come vuoi gestirlo.
-                            powerUps.Remove(powerUp);
-                        }
-                    }
-
-                    // Aggiorna tutti i power up attivi.
-                    foreach (var powerUp in powerUps)
-                    {
-                        powerUp.Update();
-                    }
-
-                    // Aggiungo la logica per rilevare la collisione con PickUpItem:
-                    foreach (var item in pickUpItems)
-                    {
-                        if (item.IsActive && item.CheckCollision(player))
-                        {
-                            score += PickUpItem.BONUS_POINTS;
-                            pickUpItemSound.Play(0.5f, 0, 0);
-                            item.IsActive = false;
-                            
-                        }
-                    }
-
-                    // Aggiorna tutti gli pickupitem attivi.
-                    foreach (var pickUpItem in pickUpItems)
-                    {
-                       pickUpItem.Update();
-                    }
-
-                    // Gestione dello sfondo
-                    backgroundNearPosition.Y += backgroundNearSpeed;
-                    backgroundFarPosition.Y += backgroundFarSpeed;
-
-                    // Controllo per lo sfondo vicino (Near)
-                    if (backgroundNearPosition.Y >= GraphicsDevice.Viewport.Height)
-                    {
-                        backgroundNearPosition.Y = backgroundFarPosition.Y - backgroundNear.Height * scaleFactorNear;
-                    }
-
-                    // Controllo per lo sfondo lontano (Far)
-                    if (backgroundFarPosition.Y >= GraphicsDevice.Viewport.Height)
-                    {
-                        backgroundFarPosition.Y = backgroundNearPosition.Y - backgroundFar.Height * scaleFactorFar;
-                    }
-
-
-
-
-
+                    UpdatePlayingState(gameTime);
 
                     break;
 
-
-
-
-
-
                 case GameState.GameOver:
-                    
-                    //Implemento logica per gestire Game Over
-                AddNewScore("Sans", score);
-                MediaPlayer.Stop();
-                if (keyboardState.IsKeyDown(Keys.Enter))
-                {
-                    currentState = GameState.Playing;
-                    ResetGame();
-                    MediaPlayer.Play(mySong);  // Riprendi la canzone quando il gioco viene resettato
-                }
+                    HandleGameOverState();
                     break;
 
                 case GameState.Menu:
                     // TODO: Menu logic here
+                    HandleMenuState();
                     //if (/* Player starts the game */)
                     //{
                     //    currentState = GameState.Playing;
@@ -473,116 +195,24 @@ namespace Touhou
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
-
-            // TODO: Add your drawing code here
             _spriteBatch.Begin();
 
             switch (currentState)
             {
                 case GameState.Playing:
-                    // Inserisco logica per gioco in corso
-
-                    // Sfondo lontano
-                    // Per lo sfondo "Far"
-                    float scaleXFar = (float)GraphicsDevice.Viewport.Width / backgroundFar.Width;
-                    float scaleYFar = (float)GraphicsDevice.Viewport.Height / backgroundFar.Height;
-                    float scaleFactorFar = Math.Max(scaleXFar, scaleYFar);
-
-                    // Per lo sfondo "Near"
-                    float scaleXNear = (float)GraphicsDevice.Viewport.Width / backgroundNear.Width;
-                    float scaleYNear = (float)GraphicsDevice.Viewport.Height / backgroundNear.Height;
-                    float scaleFactorNear = Math.Max(scaleXNear, scaleYNear);
-
-                    if (backgroundFarPosition.Y < GraphicsDevice.Viewport.Height)
-                    {
-                        Vector2 position = new Vector2(0, backgroundFarPosition.Y);
-                        _spriteBatch.Draw(backgroundFar, backgroundFarPosition, null, Color.White, 0, Vector2.Zero, scaleFactorFar, SpriteEffects.None, 0);
-                    }
-
-                    // Sfondo vicino
-                    int textureHeightNear = backgroundNear.Height;
-                    if (backgroundNearPosition.Y < GraphicsDevice.Viewport.Height)
-                    {
-                        Vector2 position = new Vector2(0, backgroundNearPosition.Y);
-                        _spriteBatch.Draw(backgroundNear, backgroundNearPosition, null, Color.White, 0, Vector2.Zero, scaleFactorNear, SpriteEffects.None, 0);
-                    }
-
-                    // Disegna il giocatore
-                    // Prendiamo le dimensioni della texture in considerazione della scala
-                    Vector2 textureDimensions = new Vector2(mainCharacterTexture.Width * scale, mainCharacterTexture.Height * scale);
-
-                    // Calcola la posizione in cui iniziare a disegnare la texture per assicurarsi che sia centrata sulla hitbox
-                    Vector2 drawPosition = new Vector2(player.GetPosition().X - textureDimensions.X / 2, player.GetPosition().Y - textureDimensions.Y / 2);
-
-                    _spriteBatch.Draw(mainCharacterTexture, drawPosition, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
-
-                    // Disegna i proiettili
-                    foreach (var bullet in bullets)
-                    {
-                        _spriteBatch.Draw(bullet.Texture, new Rectangle((int)bullet.Position.X, (int)bullet.Position.Y, Bullet.Size, Bullet.Size), Color.Red);
-                    }
-
-                    // Disegna i nemici
-                    foreach (var enemy in enemies)
-                    {
-                        _spriteBatch.Draw(enemy.Texture, new Rectangle((int)enemy.Position.X, (int)enemy.Position.Y, Enemy.Size, Enemy.Size), enemy.TintColor);
-                        // Calcola la larghezza attuale della barra della salute basata sulla percentuale di salute rimasta
-                        int currentHealthBarWidth = (int)((float)enemy.Health / enemy.MaxHealth * HEALTH_BAR_WIDTH);
-
-                        // Posizione della barra della salute (centrata sull'asse X del nemico e posta sopra di lui)
-                        Vector2 healthBarPosition = new Vector2(enemy.Position.X + (Enemy.Size - HEALTH_BAR_WIDTH) / 2, enemy.Position.Y - HEALTH_BAR_HEIGHT - 2);
-
-                        // Disegna lo sfondo della barra della salute
-                        _spriteBatch.Draw(whitePixel, new Rectangle((int)healthBarPosition.X, (int)healthBarPosition.Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT), HEALTH_BAR_BG_COLOR);
-
-                        // Disegna la barra della salute effettiva
-                       _spriteBatch.Draw(whitePixel, new Rectangle((int)healthBarPosition.X, (int)healthBarPosition.Y, currentHealthBarWidth, HEALTH_BAR_HEIGHT), HEALTH_BAR_COLOR);
-                    }
-
-                    // Disegna i proiettili dei nemici
-                    foreach (var bullet in enemyBullets)
-                    {
-                        _spriteBatch.Draw(bullet.Texture, new Rectangle((int)bullet.Position.X, (int)bullet.Position.Y, Bullet.Size, Bullet.Size), Color.Yellow); // O qualsiasi altro colore tu voglia.
-                    }
-                      
-                    //_spriteBatch.Draw(whitePixel, player.Hitbox, Color.Yellow); // Questo mostrerà l'hitbox in giallo
-                    _spriteBatch.DrawString(scoreFont, $"Score: {score}", new Vector2(10, 10), Color.White);
-
-
-                    // Disegna i power up sullo schermo nel metodo Draw:
-                    foreach (var powerUp in powerUps)
-                    {
-                        powerUp.Draw(_spriteBatch);
-                    }
-
-                    // Disegno gli oggetti pickupo
-                    foreach (var item in pickUpItems)
-                    {
-                        item.Draw(_spriteBatch);
-                    }
-
-
-
-
+                    DrawPlayingState();
                     break;
 
                 case GameState.GameOver:
-                    //Inserisco logica per gestire il Game Over
-                    GraphicsDevice.Clear(Color.Black);
-                    _spriteBatch.DrawString(gameOverFont, "YOU FAILED TO DESTROY MCDONALD EMPIRE", new Vector2(_graphics.PreferredBackBufferWidth / 2 - 150, _graphics.PreferredBackBufferHeight / 2 - 10), Color.Red);
-                        DrawGameOverScreen(_spriteBatch);
-
+                    DrawGameOverState();
                     break;
+
                 case GameState.Menu:
-                    // Draw the menu
+                    DrawMenuState();
                     break;
             }
 
-
             _spriteBatch.End();
-
-
-
             base.Draw(gameTime);
         }
 
@@ -626,7 +256,7 @@ namespace Touhou
 
             // Converte la lista in formato JSON e salva su disco
             string json = JsonConvert.SerializeObject(updatedScores);
-            File.WriteAllText("scores.json", json);
+            File.WriteAllText(FILE_NAME, json);
         }
 
 
@@ -678,6 +308,493 @@ namespace Touhou
             const float DROP_PROBABILITY = 0.50f; // 25% di probabilità di rilasciare un power-up
             return random.NextDouble() < DROP_PROBABILITY;
         }
-    }
+
+        private void UpdatePlayingState(GameTime gameTime)
+        {
+            var keyboardState = Keyboard.GetState();
+            ResumeMediaPlayer();
+            UpdateTimeTrackers(gameTime);
+            UpdateEnemyTimings();
+            HandleKeyboardInput(keyboardState);
+            UpdateEntities(gameTime);
+            UpdateBackground();
+        }
+
+        private void ResumeMediaPlayer()
+        {
+            MediaPlayer.Resume();
+        }
+
+        private void UpdateTimeTrackers(GameTime gameTime)
+        {
+            float elapsedSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            timeSinceLastPlayerShot += elapsedSeconds;
+            timeSinceLastSpawn += elapsedSeconds;
+            timeSinceLastEnemyShot += elapsedSeconds;
+            timeSinceLastScoreIncrement += elapsedSeconds;
+        }
+
+        private void UpdateEnemyTimings()
+        {
+            enemySpawnTime *= SPAWN_DECREASE_RATE;
+            enemyShootInterval *= SHOOT_DECREASE_RATE;
+
+            enemySpawnTime = Math.Max(enemySpawnTime, MIN_SPAWN_TIME);
+            enemyShootInterval = Math.Max(enemyShootInterval, MIN_SHOOT_INTERVAL);
+        }
+
+        private void HandleKeyboardInput(KeyboardState keyboardState)
+        {
+            player.Velocity = Vector2.Zero;
+
+            UpdatePlayerMovement(keyboardState);
+            HandlePlayerShooting(keyboardState);
+        }
+
+        private void UpdatePlayerMovement(KeyboardState keyboardState)
+        {
+            if (keyboardState.IsKeyDown(Keys.Left))
+                player.Velocity += new Vector2(-PLAYER_SPEED, 0);
+            if (keyboardState.IsKeyDown(Keys.Right))
+                player.Velocity += new Vector2(PLAYER_SPEED, 0);
+            if (keyboardState.IsKeyDown(Keys.Up))
+                player.Velocity += new Vector2(0, -PLAYER_SPEED);
+            if (keyboardState.IsKeyDown(Keys.Down))
+                player.Velocity += new Vector2(0, PLAYER_SPEED);
+        }
+
+        private void HandlePlayerShooting(KeyboardState keyboardState)
+        {
+            if (keyboardState.IsKeyDown(Keys.Space) && timeSinceLastPlayerShot >= playerShootCooldown)
+            {
+                player.Shoot(bullets, playerBulletsTexture);
+                playerShootSound.Play(0.2f, 0.0f, 0.0f);
+                timeSinceLastPlayerShot = 0;
+            }
+        }
+
+        private void UpdateEntities(GameTime gameTime)
+        {
+            float elapsedSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            player.Update();
+            UpdateBullets();
+            SpawnEnemies();            
+            UpdateEnemies(elapsedSeconds);
+            HandleEnemyShooting(gameTime);
+            UpdateAndCleanupEnemyBullets();
+            CheckEnemyBulletCollisions();
+            UpdateScore();
+            UpdatePowerUps();
+            UpdatePickUpItems();
+        }
+
+        private void UpdateBullets()
+        {
+            bullets.ForEach(bullet => bullet.Update());
+            bullets.RemoveAll(bullet => bullet.Position.Y < 0);
+        }
+
+        private void SpawnEnemies()
+        {
+            if (timeSinceLastSpawn >= enemySpawnTime)
+            {
+                enemies.Add(new Enemy(new Vector2(random.Next(0, _graphics.PreferredBackBufferWidth - Enemy.Size), 0), enemiesTexture));
+                timeSinceLastSpawn = 0;
+            }
+        }
+
+        private void UpdateEnemies(float elapsedSeconds)
+        {
+            foreach (var enemy in enemies)
+            {
+                enemy.Update(elapsedSeconds);
+            }
+            enemies.RemoveAll(enemy => enemy.Position.Y > _graphics.PreferredBackBufferHeight);
+        }
+
+        private void CheckEnemyBulletCollisions()
+        {
+            HandleBulletEnemyCollisions();
+            HandleBulletPlayerCollisions();
+        }
+
+        private void UpdateScore()
+        {
+            if (timeSinceLastScoreIncrement >= 1)
+            {
+                score += 50;
+                timeSinceLastScoreIncrement -= 1;
+            }
+        }
+
+        private void UpdatePowerUps()
+        {
+            foreach (var powerUp in powerUps.ToList())
+            {
+                if (powerUp.CheckCollision(player))
+                {
+                    int bonusScore = player.PowerUp();
+                    score += bonusScore;
+                    powerUpSound.Play(0.5f, 0, 0);
+                    powerUps.Remove(powerUp);
+                }
+                powerUp.Update();
+            }
+        }
+
+        private void UpdatePickUpItems()
+        {
+            foreach (var pickUpItem in pickUpItems.ToList())
+            {
+                if (pickUpItem.IsActive)
+                {
+                    if (pickUpItem.CheckCollision(player))
+                    {
+                        score += PickUpItem.BonusPoints;
+                        pickUpItemSound.Play(0.5f, 0, 0);
+                        pickUpItem.IsActive = false;
+                    }
+                    pickUpItem.Update();
+                }
+                else
+                {
+                    pickUpItems.Remove(pickUpItem);
+                }
+            }
+        }
+
+        private void UpdateBackground()
+        {
+            backgroundNearPosition.Y += backgroundNearSpeed;
+            backgroundFarPosition.Y += backgroundFarSpeed;
+
+            if (backgroundNearPosition.Y >= GraphicsDevice.Viewport.Height)
+            {
+                backgroundNearPosition.Y = backgroundFarPosition.Y - backgroundNear.Height * scaleFactorNear;
+            }
+
+            if (backgroundFarPosition.Y >= GraphicsDevice.Viewport.Height)
+            {
+                backgroundFarPosition.Y = backgroundNearPosition.Y - backgroundFar.Height * scaleFactorFar;
+            }
+        }
+
+        private void HandleBulletEnemyCollisions()
+        {
+            for (int i = enemies.Count - 1; i >= 0; i--)
+            {
+                for (int j = bullets.Count - 1; j >= 0; j--)
+                {
+                    if (enemies[i].CheckCollision(bullets[j]))
+                    {
+                        enemies[i].Hit();
+                        bullets.RemoveAt(j);
+
+                        if (enemies[i].Health <= 0)
+                        {
+                            HandleEnemyDeath(i);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void HandleEnemyDeath(int enemyIndex)
+        {
+            if (ShouldDropPowerUp())
+            {
+                powerUps.Add(new PowerUp(powerUpTexture, enemies[enemyIndex].Position));
+            }
+            else if (ShouldDropPickUpItem())
+            {
+                pickUpItems.Add(new PickUpItem
+                {
+                    Texture = pickUpItemTexture,
+                    Position = enemies[enemyIndex].Position
+                });
+            }
+            explosionSound.Play(0.2f, 0.0f, 0.0f);
+            enemies.RemoveAt(enemyIndex);
+            score += 100;
+        }
+
+        private void HandleBulletPlayerCollisions()
+        {
+            for (int i = enemyBullets.Count - 1; i >= 0; i--)
+            {
+                if (player.CheckCollision(enemyBullets[i]))
+                {
+                    currentState = GameState.GameOver;
+                    hasDrawnGameOverScreen = false;
+                    // Exit();  // Uncomment this line if you want the game to close immediately upon collision
+                }
+            }
+        }
+
+        private void HandleEnemyShooting(GameTime gameTime)
+        {
+            foreach (var enemy in enemies)
+            {
+                enemy.TimeSinceLastShot += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+                if (enemy.TimeSinceLastShot >= enemy.ShootInterval)
+                {
+                    List<Vector2> bulletsDirections = bulletPattern.GetRandomPattern(enemy.Position, player.Position, ENEMY_BULLET_SPEED);
+
+                    foreach (var direction in bulletsDirections)
+                    {
+                        Vector2 bulletPosition = new Vector2(enemy.Position.X + Enemy.Size / 2 - Bullet.Size / 2, enemy.Position.Y + Enemy.Size);
+                        enemyBullets.Add(new Bullet(bulletPosition, direction, enemiesBulletsTexture));
+                    }
+
+                    enemy.TimeSinceLastShot = 0;  // Resetta il timer del nemico
+                }
+                enemy.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+            }
+        }
+
+        private void UpdateAndCleanupEnemyBullets()
+        {
+            foreach (var bullet in enemyBullets)
+            {
+                bullet.Update();
+            }
+
+            enemyBullets.RemoveAll(bullet => bullet.Position.Y < 0 || bullet.Position.Y > _graphics.PreferredBackBufferHeight);
+        }
+
+
+        private void HandleGlobalInput()
+        {
+            var keyboardState = Keyboard.GetState();
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || keyboardState.IsKeyDown(Keys.Escape))
+                Exit();
+        }
+
+
+        private void HandleGameOverState()
+        {
+            string currentWindowsUserName = Environment.UserName;
+            AddNewScore(currentWindowsUserName, score);
+            MediaPlayer.Stop();
+
+            var keyboardState = Keyboard.GetState();
+            if (keyboardState.IsKeyDown(Keys.Enter))
+            {
+                currentState = GameState.Playing;
+                ResetGame();
+                MediaPlayer.Play(mySong);
+            }
+        }
+
+        private void HandleMenuState()
+        {
+            // TODO: Implement menu logic here
+            // You can further decompose it as you see fit.
+        }
+
+
+        private void DrawPlayingState()
+        {
+            DrawBackgrounds();
+            DrawPlayer();
+            DrawBullets();
+            DrawEnemies();
+            DrawEnemyBullets();
+            DrawPowerUps();
+            DrawPickUpItems();
+            DrawScore();
+        }
+
+        private void DrawBackgrounds()
+        {
+            DrawBackground(backgroundFar, ref backgroundFarPosition);
+            DrawBackground(backgroundNear, ref backgroundNearPosition);
+        }
+
+        private void DrawBackground(Texture2D texture, ref Vector2 position)
+        {
+            float scaleX = (float)GraphicsDevice.Viewport.Width / texture.Width;
+            float scaleY = (float)GraphicsDevice.Viewport.Height / texture.Height;
+            float scaleFactor = Math.Max(scaleX, scaleY);
+
+            if (position.Y < GraphicsDevice.Viewport.Height)
+            {
+                _spriteBatch.Draw(texture, position, null, Color.White, 0, Vector2.Zero, scaleFactor, SpriteEffects.None, 0);
+            }
+        }
+
+        private void DrawPlayer()
+        {
+            Vector2 textureDimensions = new Vector2(mainCharacterTexture.Width * scale, mainCharacterTexture.Height * scale);
+            Vector2 drawPosition = new Vector2(player.Position.X - textureDimensions.X / 2, player.Position.Y - textureDimensions.Y / 2);
+            _spriteBatch.Draw(mainCharacterTexture, drawPosition, null, Color.White, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+        }
+
+        private void DrawBullets()
+        {
+            foreach (var bullet in bullets)
+            {
+                _spriteBatch.Draw(bullet.Texture, new Rectangle((int)bullet.Position.X, (int)bullet.Position.Y, Bullet.Size, Bullet.Size), Color.Red);
+            }
+        }
+
+        private void DrawEnemies()
+        {
+            foreach (var enemy in enemies)
+            {
+                _spriteBatch.Draw(enemy.Texture, new Rectangle((int)enemy.Position.X, (int)enemy.Position.Y, Enemy.Size, Enemy.Size), enemy.TintColor);
+                DrawEnemyHealthBar(enemy);
+            }
+        }
+
+        private void DrawEnemyHealthBar(Enemy enemy)
+        {
+            int currentHealthBarWidth = (int)((float)enemy.Health / enemy.MaxHealth * HEALTH_BAR_WIDTH);
+            Vector2 healthBarPosition = new Vector2(enemy.Position.X + (Enemy.Size - HEALTH_BAR_WIDTH) / 2, enemy.Position.Y - HEALTH_BAR_HEIGHT - 2);
+            _spriteBatch.Draw(whitePixel, new Rectangle((int)healthBarPosition.X, (int)healthBarPosition.Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT), HEALTH_BAR_BG_COLOR);
+            _spriteBatch.Draw(whitePixel, new Rectangle((int)healthBarPosition.X, (int)healthBarPosition.Y, currentHealthBarWidth, HEALTH_BAR_HEIGHT), HEALTH_BAR_COLOR);
+        }
+
+        private void DrawEnemyBullets()
+        {
+            Console.WriteLine($"Drawing {enemyBullets.Count} enemy bullets");  // Questo ti dirà quanti proiettili stai cercando di disegnare.
+
+            foreach (var bullet in enemyBullets)
+            {
+                _spriteBatch.Draw(bullet.Texture, new Rectangle((int)bullet.Position.X, (int)bullet.Position.Y, Bullet.Size, Bullet.Size), Color.Yellow);
+            }
+        }
+
+        private void DrawPowerUps()
+        {
+            foreach (var powerUp in powerUps)
+            {
+                powerUp.Draw(_spriteBatch);
+            }
+        }
+
+        private void DrawPickUpItems()
+        {
+            foreach (var item in pickUpItems)
+            {
+                item.Draw(_spriteBatch);
+            }
+        }
+
+        private void DrawScore()
+        {
+            _spriteBatch.DrawString(scoreFont, $"Score: {score}", new Vector2(10, 10), Color.White);
+        }
+
+        private void DrawGameOverState()
+        {
+            GraphicsDevice.Clear(Color.Black);
+            _spriteBatch.DrawString(gameOverFont, GAME_OVER_TEXT, new Vector2(_graphics.PreferredBackBufferWidth / 2 - 150, _graphics.PreferredBackBufferHeight / 2 - 10), Color.Red);
+            DrawGameOverScreen(_spriteBatch);
+        }
+
+        private void DrawMenuState()
+        {
+            // Implement your menu drawing logic here.
+        }
+
+        private void LoadTextures()
+        {
+            whitePixel = CreateWhitePixelTexture();
+
+            backgroundNear = Content.Load<Texture2D>(BACKGROUND_NEAR_TEXTURE_PATH);
+            backgroundFar = Content.Load<Texture2D>(BACKGROUND_FAR_TEXTURE_PATH);
+            powerUpTexture = Content.Load<Texture2D>(POWER_UP_TEXTURE_PATH);
+            pickUpItemTexture = Content.Load<Texture2D>(PICK_UP_ITEM_TEXTURE_PATH);
+            enemiesTexture = Content.Load<Texture2D>(ENEMIES_TEXTURE_PATH);
+            enemiesBulletsTexture = Content.Load<Texture2D>(ENEMIES_BULLETS_TEXTURE_PATH);
+            playerBulletsTexture = Content.Load<Texture2D>(PLAYER_BULLETS_TEXTURE_PATH);
+        }
+
+        private void LoadSounds()
+        {
+            playerShootSound = Content.Load<SoundEffect>(PLAYER_SHOOT_SOUND_PATH);
+            explosionSound = Content.Load<SoundEffect>(EXPLOSION_SOUND_PATH);
+            powerUpSound = Content.Load<SoundEffect>(POWER_UP_SOUND_PATH);
+            pickUpItemSound = Content.Load<SoundEffect>(PICK_UP_ITEM_SOUND_PATH);
+        }
+
+        private void LoadFonts()
+        {
+            gameOverFont = Content.Load<SpriteFont>(FONT_PATH);
+            scoreFont = Content.Load<SpriteFont>(FONT_PATH);
+        }
+
+        private void InitializeBackground()
+        {
+            float scaleXNear = (float)GraphicsDevice.Viewport.Width / backgroundNear.Width;
+            float scaleYNear = (float)GraphicsDevice.Viewport.Height / backgroundNear.Height;
+            scaleFactorNear = Math.Max(scaleXNear, scaleYNear);
+
+            float scaleXFar = (float)GraphicsDevice.Viewport.Width / backgroundFar.Width;
+            float scaleYFar = (float)GraphicsDevice.Viewport.Height / backgroundFar.Height;
+            scaleFactorFar = Math.Max(scaleXFar, scaleYFar);
+
+            backgroundNearPosition = new Vector2(0, 0);
+            backgroundFarPosition = new Vector2(0, -backgroundNear.Height * scaleFactorNear);
+        }
+
+        private Texture2D CreateWhitePixelTexture()
+        {
+            Texture2D texture = new Texture2D(GraphicsDevice, 1, 1);
+            texture.SetData(new[] { Color.White });
+            return texture;
+        }
+
+        internal List<ScoreEntry> LoadScores()
+        {
+            if (File.Exists(FILE_NAME))
+            {
+                string json = File.ReadAllText(FILE_NAME);
+                scores = JsonConvert.DeserializeObject<List<ScoreEntry>>(json);
+            }
+            return scores;
+        }
+
+
+        private void LoadMainCharacter()
+        {
+            mainCharacterTexture = Content.Load<Texture2D>(MAIN_CHARACTER_ASSET);
+        }
+
+        private void InitializePlayer()
+        {
+            Vector2 initialPosition = new Vector2(
+                _graphics.PreferredBackBufferWidth / 2 - Player.Size / 2,
+                _graphics.PreferredBackBufferHeight - Player.Size - 10
+            );
+
+            player = new Player(
+                initialPosition,
+                Vector2.Zero,
+                0.1f,
+                Player.DefaultBulletsAmount,
+                Player.DefaultDamage,
+                mainCharacterTexture
+            );
+        }
+
+        private void LoadAndPlayBackgroundMusic()
+        {
+            mySong = Content.Load<Song>(SONG_ASSET);
+            MediaPlayer.Play(mySong);
+            MediaPlayer.IsRepeating = true;
+            MediaPlayer.Volume = 0.5f;
+        }
+
+        private void LoadGameScores()
+        {
+            scores = LoadScores();
+        }
 
     }
+
+}

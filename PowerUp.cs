@@ -1,52 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Touhou
 {
     internal class PowerUp
     {
-        public Vector2 Position;
+        // Properties
+        public Vector2 Position { get; private set; }
         public Texture2D Texture { get; private set; }
+        public Vector2 Velocity { get; private set; } = new Vector2(0, 2);
 
-        public Vector2 Velocity = new Vector2(0, 2);  // Puoi cambiare la velocità come preferisci
-        float scale = 0.05f;  // Riduci la dimensione del 30% ad esempio
+        // Constants
+        private const float SCALE = 0.05f;
 
         public PowerUp(Texture2D texture, Vector2 startPosition)
         {
-            this.Texture = texture;
-            this.Position = startPosition;
+            Texture = texture;
+            Position = startPosition;
         }
 
+        // Update power-up position
         public void Update()
         {
-            // Il power up si muove verso il basso, come un nemico.
             Position += Velocity;
         }
 
+        // Check collision with the player
         public bool CheckCollision(Player player)
         {
-            // Dimensioni del giocatore.
-            float playerWidth = Player.Size;  // se Player.Size rappresenta la larghezza
-            float playerHeight = Player.Size;  // assumiamo che la larghezza e l'altezza siano uguali; cambia se necessario
+            Rectangle powerUpRect = new Rectangle(
+                (int)Position.X,
+                (int)Position.Y,
+                (int)(Texture.Width * SCALE),
+                (int)(Texture.Height * SCALE)
+            );
 
-            // Collisione basata su rettangoli.
-            bool collided = player.GetPosition().X + playerWidth > Position.X &&
-                            player.GetPosition().X < Position.X + Texture.Width * scale &&
-                            player.GetPosition().Y + playerHeight > Position.Y &&
-                            player.GetPosition().Y < Position.Y + Texture.Height * scale;
+            Rectangle playerRect = new Rectangle(
+                (int)player.Position.X,
+                (int)player.Position.Y,
+                Player.Size,
+                Player.Size
+            );
 
-            return collided;
+            return powerUpRect.Intersects(playerRect);
         }
 
+        // Draw the power-up
         public void Draw(SpriteBatch spriteBatch)
         {
-           spriteBatch.Draw(Texture, Position, null, Microsoft.Xna.Framework.Color.White, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            spriteBatch.Draw(Texture, Position, null, Color.White, 0, Vector2.Zero, SCALE, SpriteEffects.None, 0);
         }
     }
 }

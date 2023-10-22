@@ -1,52 +1,53 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using SharpDX.Direct2D1;
-using SharpDX.Direct2D1.Effects;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Touhou;
-using SpriteBatch = Microsoft.Xna.Framework.Graphics.SpriteBatch;
 
 internal class PickUpItem
 {
+    // Properties
     public Texture2D Texture { get; set; }
-    public Vector2 Position;
+    public Vector2 Position { get; set; }
     public bool IsActive { get; set; } = true;
-    public const int BONUS_POINTS = 200;
-    public Vector2 Velocity = new Vector2(0, 2);  // Puoi cambiare la velocità come preferisci
+    public Vector2 Velocity { get; set; } = new Vector2(0, 2);
+    public static int BonusPoints => BONUS_POINTS;
 
-    float scale = 0.05f;  // Riduci la dimensione del 30% ad esempio
+    // Constants
+    private const int BONUS_POINTS = 200;
+    private const float SCALE = 0.05f;
 
+    // Update the position of the item
     public void Update()
     {
         Position += Velocity;
-        // Aggiungi altre logiche dell'update se necessario, ad esempio rimuovere l'oggetto se esce dallo schermo
+        // Add more update logic if needed, e.g., remove the item if it goes off-screen
     }
 
+    // Draw the item if it's active
     public void Draw(SpriteBatch spriteBatch)
     {
         if (IsActive)
         {
-            spriteBatch.Draw(Texture, Position, null, Microsoft.Xna.Framework.Color.White, 0, Vector2.Zero, scale, SpriteEffects.None, 0);
+            spriteBatch.Draw(Texture, Position, null, Color.White, 0, Vector2.Zero, SCALE, SpriteEffects.None, 0);
         }
     }
 
+    // Check collision with the player
     public bool CheckCollision(Player player)
     {
-        // Dimensioni del giocatore.
-        float playerWidth = Player.Size;  // se Player.Size rappresenta la larghezza
-        float playerHeight = Player.Size;  // assumiamo che la larghezza e l'altezza siano uguali; cambia se necessario
+        Rectangle itemRect = new Rectangle(
+            (int)Position.X,
+            (int)Position.Y,
+            (int)(Texture.Width * SCALE),
+            (int)(Texture.Height * SCALE)
+        );
 
-        // Collisione basata su rettangoli.
-        bool collided = player.GetPosition().X + playerWidth > Position.X &&
-                        player.GetPosition().X < Position.X + Texture.Width * scale &&
-                        player.GetPosition().Y + playerHeight > Position.Y &&
-                        player.GetPosition().Y < Position.Y + Texture.Height * scale;
+        Rectangle playerRect = new Rectangle(
+            (int)player.Position.X,
+            (int)player.Position.Y,
+            Player.Size,
+            Player.Size
+        );
 
-        return collided;
+        return itemRect.Intersects(playerRect);
     }
 }
-
